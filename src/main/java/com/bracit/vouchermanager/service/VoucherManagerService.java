@@ -1,20 +1,18 @@
 package com.bracit.vouchermanager.service;
 
+import com.bracit.vouchermanager.model.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.bracit.vouchermanager.common.api.Response;
-import com.bracit.vouchermanager.model.VoucherMetaData;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 @Service
-@Qualifier("voucherManagerService")
-public interface VoucherManagerService<I,O> {
+public interface VoucherManagerService {
 
-    Response<O> sendVoucherToEsbAsync(I voucherTemplateModel, VoucherMetaData metaData) throws JsonProcessingException;
+    Response sendVoucherToEsbAsync(VoucherRequest voucherRequest, VoucherMetaData metaData) throws JsonProcessingException;
 
-    Response<O> sendVoucherToEsbSync(I voucherTemplateModel, VoucherMetaData metaData) throws JsonProcessingException;
+    Response sendVoucherToEsbSync(VoucherRequest voucherRequest, VoucherMetaData metaData) throws JsonProcessingException;
 
-    Response<O> sendVoucherToMfDirectly(I voucherTemplateModel,VoucherMetaData metaData) throws JsonProcessingException;
+    Response sendVoucherToMfDirectly(VoucherRequest voucherRequest, VoucherMetaData metaData) throws JsonProcessingException;
 
-    Response<O> flushVoucher(I voucherTemplateModel,VoucherMetaData metaData) throws JsonProcessingException;
+    Response flushVoucher(FlushVoucherModel flushVoucherModel, ApiRequestMetaData metaData) throws JsonProcessingException;
 }

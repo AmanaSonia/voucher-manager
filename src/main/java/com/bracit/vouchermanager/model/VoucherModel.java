@@ -2,21 +2,25 @@ package com.bracit.vouchermanager.model;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import java.util.List;
+import lombok.NoArgsConstructor;
 
+import java.util.List;
 
 
 @Data
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 @JsonSerialize
 @JsonDeserialize
 public class VoucherModel {
     private Long appOrganizationBranch;
     private String refTransactionNo;
     private String particulars;
-    private String transactionDate;
+    private String date;
     private String paymentType;
     private String payToName;
     private String receivedFrom;
@@ -25,15 +29,15 @@ public class VoucherModel {
     private Long referenceId;
     private Integer eventId;
     private Long accPaymentSubType;
-    private Long bankAccountId;
+    /*private Long bankAccountId;*/
     private String transactionDocumentNo;
-    private String transactionDocumentDate;
+    /*private String transactionDocumentDate;*/
     private Integer organizationId;
     private String programType;
     private String senderBankName;
     private String senderBranchName;
     private String mobileNumber;
-    private Long mobileMoneyInfoId;
+    /*private Long mobileMoneyInfoId;*/
     private Boolean isGroupVoucher;
     private boolean isNegativeAmount;
 

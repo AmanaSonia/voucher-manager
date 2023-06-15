@@ -29,11 +29,11 @@ public class AutoVoucherEventLog {
     private String particulars;
     private String businessDate;
     private String voucherModel;
-    private VoucherStatus status = VoucherStatus.PENDING;
-    private Date creationDate;
-    private Date progressDate;
-    private Date completionDate;
-    private Long createdBy;
+    private final String status = VoucherStatus.PENDING.toString();
+    private Date creationDate; // new Date()
+    private Date progressDate; // from erp main app: nullable true
+    private Date completionDate; // new date()/nullable true
+    private final Long createdBy=1l;
     private String errorMessage;
-    private Integer version;
+    private final Integer version=0;
 }

@@ -1,12 +1,13 @@
 package com.bracit.vouchermanager.common.client;
 
 import com.bracit.vouchermanager.common.api.Response;
-import com.bracit.vouchermanager.common.enums.ApiResponseCode;
+import com.bracit.vouchermanager.model.ApiRequestMetaData;
 import com.bracit.vouchermanager.model.VoucherMetaData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -20,40 +21,59 @@ import java.net.URI;
 
 @Service
 public class RestApiClient {
-
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Autowired
-    private RestTemplate restTemplate;
+    private RestTemplate restTemplateVoucherManager;
 
-    public Response<String> callRestApi(String apiBody, VoucherMetaData metaData){
-        Response<String> response = new Response<>();
-        response.setCode("100");
+    HttpHeaders prepareHttpHeadersForEsbVoucherCall(VoucherMetaData voucherMetaData){
+        HttpHeaders httpHeaders =new HttpHeaders();
+        httpHeaders.set("Authorization",voucherMetaData.getAuthorization());
+        httpHeaders.set("branchId",voucherMetaData.getBranchId());
+        httpHeaders.set("tracerId",voucherMetaData.getTracerId());
+        httpHeaders.set("feature",voucherMetaData.getFeature());
+        httpHeaders.set("businessDate",voucherMetaData.getBusinessDate());
+        return httpHeaders;
+    }
+
+    public Response callVoucherApi(String apiBody, VoucherMetaData metaData){
+        Response response = new Response();
         try{
             MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
             params.add("key",metaData.getFinKey());
-            String url = metaData.getRootUrl()+metaData.getApiEndPoint();
+            String url = metaData.getRootUrl()+"/"+metaData.getApiEndPoint();
             URI uri = UriComponentsBuilder.fromUriString(url).queryParams(params).build().toUri();
-            HttpEntity<String> httpEntity = new HttpEntity<>(apiBody,metaData.getHttpHeaders());
-            ResponseEntity<String> responseEntity = restTemplate.exchange(
+            HttpEntity<String> httpEntity = new HttpEntity<>(apiBody,prepareHttpHeadersForEsbVoucherCall(metaData));
+            ResponseEntity<Response> responseEntity = restTemplateVoucherManager.exchange(
                     uri,
                     HttpMethod.POST,
                     httpEntity,
-                    String.class
+                    Response.class
             );
-            if (responseEntity.getStatusCode().is2xxSuccessful()) {
-                response.setCode(responseEntity.getStatusCode().toString());
-                response.setData(responseEntity.getBody());
-            }else{
-                response.setCode(responseEntity.getStatusCode().toString());
-                response.setMessage("");
-            }
+            response = responseEntity.getBody();
         }catch (Exception ex){
-            response.setCode(ApiResponseCode.FAILED.toString());
             logger.info("Error at calling rest api: {}",ex.getMessage());
         }
         return response;
     }
 
+    public Response callFlushApi(String apiBody, ApiRequestMetaData metaData){
+        Response response = new Response();
+        ResponseEntity<Response> responseEntity;
+        try{
+            String url = metaData.getRootUrl()+"/"+metaData.getApiEndPoint();
+            HttpEntity<String> httpEntity = new HttpEntity<>(apiBody,new HttpHeaders());
+            responseEntity = restTemplateVoucherManager.exchange(
+                    url,
+                    HttpMethod.POST,
+                    httpEntity,
+                    Response.class
+            );
+            response = responseEntity.getBody();
+        }catch (Exception ex){
+            logger.info("Error at calling rest api: {}",ex.getMessage());
+        }
+        return response;
+    }
 
 }

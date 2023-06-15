@@ -1,67 +1,77 @@
 package com.bracit.vouchermanager;
+import com.bracit.vouchermanager.model.*;
+import com.bracit.vouchermanager.service.VoucherPostingServicesTest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.bracit.vouchermanager.common.api.Response;
-import com.bracit.vouchermanager.model.VoucherMetaData;
-import com.bracit.vouchermanager.model.VoucherModel;
-import com.bracit.vouchermanager.model.VoucherRequest;
-import com.bracit.vouchermanager.model.VoucherResponse;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.HttpHeaders;
 import com.bracit.vouchermanager.service.VoucherManagerService;
-import com.bracit.vouchermanager.service.VoucherManagerServiceImpl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest
+@SuppressWarnings("unchecked")
+//@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class VoucherManagerApplicationTests {
+
+	@Autowired
+	private VoucherManagerService voucherManagerService;
+
+	@Autowired
+	private VoucherPostingServicesTest voucherPostingServicesTest;
+
 
 	@Test
 	void contextLoads() {
 	}
 
-
-	@Test
-	public void sendVoucherToEsb() throws JsonProcessingException {
-		VoucherManagerService<VoucherRequest,VoucherResponse> voucherManagerService = new VoucherManagerServiceImpl<>();
-		VoucherModel voucherModel = getVoucherModel();
+	//@Test
+	//@Order(1)
+	public void sendVoucherToEsbAsync() throws JsonProcessingException {
+		VoucherModel voucherModel = voucherPostingServicesTest.getEsbVoucherModel();
 		VoucherRequest voucherRequest = VoucherRequest.builder().voucherModel(voucherModel).build();
-		VoucherMetaData voucherMetaData = getVoucherMetaData();
-		Response<VoucherResponse> response = voucherManagerService.sendVoucherToMfDirectly(voucherRequest,voucherMetaData);
-		assertEquals("SUCCESS",response.getCode());
+			VoucherMetaData voucherMetaData = voucherPostingServicesTest.getVoucherMetaDataEsb("http://10.42.53.185:8090/async","nodef/accountingApi/autoVoucher");
+		Response response = voucherManagerService.sendVoucherToEsbAsync(voucherRequest,voucherMetaData);
+		assertEquals("200",response.getCode());
 	}
 
-	private VoucherMetaData getVoucherMetaData(){
-		VoucherMetaData metaData =  VoucherMetaData.builder()
-				.rootUrl("https://erpdevelopment.brac.net")
-				.apiEndPoint("/nodef/accountingApi/autoVoucher")
-				.finKey("5d0a4a85-df7a-siapi-bits-93eb-145f6a9902ae")
-				.build();
-		HttpHeaders httpHeaders =new HttpHeaders();
-		httpHeaders.set("key",metaData.getFinKey());
-		metaData.setHttpHeaders(httpHeaders);
-		return metaData;
+	//@Test
+	//@Order(2)
+	public void sendVoucherToEsbSync() throws JsonProcessingException {
+		VoucherModel voucherModel = voucherPostingServicesTest.getEsbVoucherModel();
+		VoucherRequest voucherRequest = VoucherRequest.builder().voucherModel(voucherModel).build();
+		VoucherMetaData voucherMetaData = voucherPostingServicesTest.getVoucherMetaDataEsb("http://10.42.53.185:8090/sync","nodef/accountingApi/autoVoucher");
+		Response<VoucherResponse> response = voucherManagerService.sendVoucherToEsbSync(voucherRequest,voucherMetaData);
+		assertEquals("200",response.getCode());
 	}
 
-	private VoucherModel getVoucherModel(){
-		VoucherModel voucherModel = VoucherModel.builder()
-				.eventId(1)
-				.appOrganizationBranch(2l)
-				.projectId(1l)
-				.referenceId(2l)
-				.paymentType("sfd")
-				.transactionDate("2023-06-11 00:00:00")
-				.refTransactionNo("wds")
-				.particulars("scds")
-				.createdBy(1l)
-				.payToName("adss")
-				.receivedFrom("sds")
-				.bankAccountId(1l)
-				.accPaymentSubType(1l)
-				.transactionDocumentNo("adssc")
-				.transactionDocumentDate("2023-06-11 00:00:00")
-				.build();
-		return voucherModel;
+
+	//@Test
+	//@Order(3)
+	public void sendVoucherToMfDirectLy() throws JsonProcessingException {
+		VoucherModel voucherModel = voucherPostingServicesTest.getEsbVoucherModel();
+		VoucherRequest voucherRequest = VoucherRequest.builder().voucherModel(voucherModel).build();
+		VoucherMetaData voucherMetaData = voucherPostingServicesTest.getVoucherMetaDataEsb("https://erpdevelopment.brac.net","nodef/accountingApi/autoVoucher");
+		Response response = voucherManagerService.sendVoucherToMfDirectly(voucherRequest,voucherMetaData);
+		assertEquals("200",response.getCode());
 	}
+
+	//@Test
+	//@Order(4)
+	public void flushVoucher() throws JsonProcessingException {
+		VoucherModel voucherModel = voucherPostingServicesTest.getEsbVoucherModel();
+		FlushVoucherModel flushVoucherModel = FlushVoucherModel.builder()
+				.tracerId("tid12345")
+				.voucherModel(voucherModel).build();
+		flushVoucherModel.setVoucherModel(voucherModel);;
+		ApiRequestMetaData apiRequestMetaData = voucherPostingServicesTest.getApiRequestData();
+		Response response = voucherManagerService.flushVoucher(flushVoucherModel,apiRequestMetaData);
+		assertEquals("200",response.getCode());
+	}
+
 
 }

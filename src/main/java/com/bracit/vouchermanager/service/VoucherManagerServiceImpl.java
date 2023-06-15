@@ -1,68 +1,83 @@
 package com.bracit.vouchermanager.service;
 
-
+import com.bracit.vouchermanager.model.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.bracit.vouchermanager.common.api.Response;
 import com.bracit.vouchermanager.common.client.RestApiClient;
-import com.bracit.vouchermanager.common.enums.ApiResponseCode;
-import com.bracit.vouchermanager.model.VoucherMetaData;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 @Service
-public class VoucherManagerServiceImpl<I,O> implements VoucherManagerService<I,O>  {
+public class VoucherManagerServiceImpl implements VoucherManagerService {
 
-    private ObjectMapper objectMapper;
+    @Autowired
+    private  ObjectMapper objectMapper;
 
-    private RestApiClient restApiClient;
+    @Autowired
+    private  RestApiClient restApiClient;
 
-    private ObjectMapper getObjectMapper(){
-        if(objectMapper!=null){
-            return objectMapper;
+    @Autowired
+    private AutoVoucherEventLogService autoVoucherEventLogService;
+
+
+    @Override
+    public Response sendVoucherToEsbAsync(VoucherRequest voucherRequest, VoucherMetaData metaData) throws JsonProcessingException {
+        return callVoucherApiAsync(voucherRequest,metaData);
+    }
+
+    @Override
+    public Response sendVoucherToEsbSync(VoucherRequest voucherRequest, VoucherMetaData metaData) throws JsonProcessingException {
+        return callVoucherApiSync(voucherRequest,metaData);
+    }
+
+    @Override
+    public Response sendVoucherToMfDirectly(VoucherRequest voucherRequest, VoucherMetaData metaData) throws JsonProcessingException {
+        return callVoucherApiSync(voucherRequest,metaData);
+    }
+
+    @Override
+    public Response flushVoucher(FlushVoucherModel flushVoucherModel, ApiRequestMetaData metaData) throws JsonProcessingException {
+        return callFlushVoucherApi(flushVoucherModel,metaData);
+    }
+
+    Response callVoucherApiAsync(VoucherRequest voucherRequest, VoucherMetaData voucherMetaData) throws JsonProcessingException {
+        String voucherRequestBody = objectMapper.writeValueAsString(voucherRequest);
+        Response apiResponse = restApiClient.callVoucherApi(voucherRequestBody,voucherMetaData);
+        return apiResponse;
+    }
+
+
+    Response callVoucherApiSync(VoucherRequest voucherRequest, VoucherMetaData voucherMetaData) throws JsonProcessingException {
+        Response apiResponse = new Response();
+        try{
+            String voucherRequestBody = objectMapper.writeValueAsString(voucherRequest);
+            apiResponse = restApiClient.callVoucherApi(voucherRequestBody,voucherMetaData);
+            if(!apiResponse.getCode().equals("200")){
+                autoVoucherEventLogService.prepareAndSaveAutoVoucherEventLog(voucherRequest.getVoucherModel());
+            }
+        }catch (Exception Ex){
+            autoVoucherEventLogService.prepareAndSaveAutoVoucherEventLog(voucherRequest.getVoucherModel());
         }
-        return new ObjectMapper();
+        return apiResponse;
     }
 
-    private RestApiClient getRestApiClient(){
-        if(restApiClient!=null){
-            return restApiClient;
+    Response callFlushVoucherApi(FlushVoucherModel flushVoucherModel , ApiRequestMetaData metaData) throws JsonProcessingException {
+        Response apiResponse = new Response<>();
+        try{
+            Map<String,String> map = new LinkedHashMap<>();
+            map.put("trx",flushVoucherModel.getTracerId());
+            String voucherRequestBody = objectMapper.writeValueAsString(map);
+            apiResponse = restApiClient.callFlushApi(voucherRequestBody,metaData);
+            throw  new Exception("test auto event");
+        }catch (Exception Ex){
+            autoVoucherEventLogService.prepareAndSaveAutoVoucherEventLog(flushVoucherModel.getVoucherModel());
         }
-        return new RestApiClient();
+        return apiResponse;
     }
-
-    @Override
-    public Response<O> sendVoucherToEsbAsync(I voucherTemplateModel, VoucherMetaData metaData) throws JsonProcessingException {
-        return callVoucherApi(voucherTemplateModel,metaData);
-    }
-
-    @Override
-    public Response<O> sendVoucherToEsbSync(I voucherTemplateModel, VoucherMetaData metaData) throws JsonProcessingException {
-        return callVoucherApi(voucherTemplateModel,metaData);
-    }
-
-    @Override
-    public Response<O> sendVoucherToMfDirectly(I voucherTemplateModel, VoucherMetaData metaData) throws JsonProcessingException {
-        return callVoucherApi(voucherTemplateModel,metaData);
-    }
-
-    @Override
-    public Response<O> flushVoucher(I voucherTemplateModel, VoucherMetaData metaData) throws JsonProcessingException {
-        return callVoucherApi(voucherTemplateModel,metaData);
-    }
-
-    Response<O> callVoucherApi(I voucherRequestTemplate,VoucherMetaData voucherMetaData) throws JsonProcessingException {
-        Response<O> voucherResponseTemplate = new Response<>();
-        String voucherRequestBody = getObjectMapper().writeValueAsString(voucherRequestTemplate);
-        Response<String> apiResponse = getRestApiClient().callRestApi(voucherRequestBody,voucherMetaData);
-        if(apiResponse.getCode().equals(ApiResponseCode.SUCCESS.toString())){
-            O voucherResponse = (O)apiResponse.getData();
-            voucherResponseTemplate.setData(voucherResponse);
-        }else{
-
-        }
-        return voucherResponseTemplate;
-    }
-
 
 
 }

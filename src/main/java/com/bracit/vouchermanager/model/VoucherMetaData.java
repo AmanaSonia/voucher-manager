@@ -1,26 +1,21 @@
 package com.bracit.vouchermanager.model;
 
-import jakarta.validation.constraints.NotNull;
 import lombok.*;
-import org.springframework.http.HttpHeaders;
 
+@Setter
+@Getter
+@AllArgsConstructor
+@NoArgsConstructor
+public class VoucherMetaData extends ApiRequestMetaData {
 
-@Data
-@Builder
-public class VoucherMetaData {
+    private String authorization;
 
-    @NotNull
-    private String rootUrl;
+    private String branchId;
 
-    @NotNull
-    private String apiEndPoint;
+    private String tracerId;
 
-    @NotNull
-    private String finKey;
+    private String  feature;
 
-    @NotNull
-    private String apiToken;
+    private String businessDate;
 
-    @NotNull
-    private HttpHeaders httpHeaders;
 }
